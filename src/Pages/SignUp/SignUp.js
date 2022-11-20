@@ -24,13 +24,29 @@ const SignUp = () => {
                 }
                 updateUser(userInfo)
                     .then(() => {
-                        navigate('/');
-                     })
+                        saveUser(data.name, data.email)
+                    })
                     .catch(error => console.log(error));
             })
             .catch(error => {
                 console.log(error)
                 setSignupError(error.message);
+            })
+    }
+
+    const saveUser = (name, email) => {
+        const user = { name, email };
+        fetch('http://localhost:5000/users', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(user)
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                navigate('/');
             })
     }
     return (
@@ -71,7 +87,7 @@ const SignUp = () => {
                         {errors.password && <p className='text-red-600'>{errors.password.message}</p>}
                     </div>
                     <input className='btn btn-accent w-full my-5' value="Login" type="submit" />
-                    {signupError && <p className='text-red-600'>{signupError}</p> }
+                    {signupError && <p className='text-red-600'>{signupError}</p>}
                 </form>
                 <p>
                     Already registered? <Link className='text-secondary' to="/login">Login</Link>
