@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import Loading from '../../Shared/Loading/Loading';
 
 const AddDoctor = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
+    const navigate = useNavigate();
 
     const imageHostKey = process.env.REACT_APP_imgbbKey;
     console.log(imageHostKey);
 
     const { data: specialties, isLoading } = useQuery({
-        queryKey: ['sceciality'],
+        queryKey: ['specialty'],
         queryFn: async () => {
             const res = await fetch('http://localhost:5000/appointmentSpecialty');
             const data = await res.json();
@@ -23,18 +26,38 @@ const AddDoctor = () => {
         const image = data.image[0];
         const formData = new FormData();
         formData.append('image', image);
-        const url = `https://api.imgbb.com/1/upload?expiration=600&key=${imageHostKey}`;
+        const url = `https://api.imgbb.com/1/upload?key=${imageHostKey}`;
         fetch(url, {
             method: 'POST',
             body: formData
         })
-        .then(res => res.json())
-        .then(imgData => {
-            if(imgData.success){
-                console.log(imgData.data.url);
-            }
-            console.log(imgData);
-        })
+            .then(res => res.json())
+            .then(imgData => {
+                if (imgData.success) {
+                    console.log(imgData.data.url);
+                }
+                console.log(imgData);
+                const doctor = {
+                    name: data.name,
+                    email: data.email,
+                    specialty: data.specialty,
+                    image: imgData.data.url
+                }
+                fetch('http://localhost:5000/doctors', {
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                        authorization: `bearer ${localStorage.getItem('accessToken')}`
+                    },
+                    body: JSON.stringify(doctor)
+                })
+                    .then(res => res.json())
+                    .then(result => {
+                        console.log(result);
+                        toast.success(`${data.name} is added successfully`);
+                        navigate('/dashboard/managedoctors');
+                    })
+            })
     }
 
     if (isLoading) {
@@ -72,7 +95,7 @@ const AddDoctor = () => {
                                 required: true
                             })}
                         >
-                            <option disabled selected>Select a Specialty</option>
+                            <option disabled>Select a Specialty</option>
                             {
                                 specialties.map(speciality => <option
                                     key={speciality._id}
@@ -91,7 +114,8 @@ const AddDoctor = () => {
                             {...register("image")}
                         />
                     </div>
-                    <input className='btn btn-accent w-full my-5' value="Sign Up" type="submit" />
+                    <input className='btn btn-accent w-full my-5' value="Add Doctor" type="submit" />
+                    {errors.password && <p className='text-red-600'>{errors.password.message}</p>}
                 </form>
             </div>
         </div>
