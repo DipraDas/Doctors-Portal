@@ -1,10 +1,44 @@
+import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import Loading from '../../Shared/Loading/Loading';
 
 const AddDoctor = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
+
+    const imageHostKey = process.env.REACT_APP_imgbbKey;
+    console.log(imageHostKey);
+
+    const { data: specialties, isLoading } = useQuery({
+        queryKey: ['sceciality'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:5000/appointmentSpecialty');
+            const data = await res.json();
+            return data;
+        }
+    })
+
     const handleAddDoctor = data => {
         console.log(data)
+        const image = data.image[0];
+        const formData = new FormData();
+        formData.append('image', image);
+        const url = `https://api.imgbb.com/1/upload?expiration=600&key=${imageHostKey}`;
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(imgData => {
+            if(imgData.success){
+                console.log(imgData.data.url);
+            }
+            console.log(imgData);
+        })
+    }
+
+    if (isLoading) {
+        return <Loading></Loading>
     }
     return (
         <div>
@@ -29,16 +63,33 @@ const AddDoctor = () => {
                             })}
                         />
                     </div>
-
                     <div className="form-control w-full max-w-xs">
                         <label className="label">
                             <span className="label-text">Specialty</span>
                         </label>
-                        <select className="select select-bordered w-full max-w-xs">
-                            <option disabled selected>Pick a Specialty</option>
-                            <option>Han Solo</option>
-                            <option>Greedo</option>
+                        <select className="select select-bordered w-full max-w-xs"
+                            {...register("specialty", {
+                                required: true
+                            })}
+                        >
+                            <option disabled selected>Select a Specialty</option>
+                            {
+                                specialties.map(speciality => <option
+                                    key={speciality._id}
+                                    value={speciality.name}
+                                >
+                                    {speciality.name}
+                                </option>)
+                            }
                         </select>
+                    </div>
+                    <div className="form-control w-full max-w-xs">
+                        <label className="label">
+                            <span className="label-text">Image</span>
+                        </label>
+                        <input type="file" className="input input-bordered w-full max-w-xs"
+                            {...register("image")}
+                        />
                     </div>
                     <input className='btn btn-accent w-full my-5' value="Sign Up" type="submit" />
                 </form>
